@@ -1,0 +1,111 @@
+symptom,disease
+I have fever and cough,General Physician
+Severe cold and sore throat,General Physician
+Mild headache and dizziness,General Physician
+High fever for 3 days,General Physician
+Fatigue and weakness,General Physician
+Chest pain and shortness of breath,Cardiology
+Irregular heartbeat and palpitations,Cardiology
+High blood pressure and dizziness,Cardiology
+Chest tightness while walking,Cardiology
+Swelling in legs and breathlessness,Cardiology
+Sudden severe headache,Neurology
+Frequent fainting and confusion,Neurology
+Numbness in hands and legs,Neurology
+Seizure and loss of consciousness,Neurology
+Dizziness and vision problems,Neurology
+Severe joint pain and stiffness,Orthopedics
+Knee pain when climbing stairs,Orthopedics
+Back pain after lifting weight,Orthopedics
+Shoulder pain with swelling,Orthopedics
+Fracture in leg after fall,Orthopedics
+Red itchy skin rash,Dermatology
+Dry skin with severe itching,Dermatology
+Pimples and acne on face,Dermatology
+Hair loss and dandruff,Dermatology
+Fungal infection on foot,Dermatology
+Severe stomach pain and vomiting,Gastroenterology
+Acidity and indigestion after meals,Gastroenterology
+Loose motions for 2 days,Gastroenterology
+Blood in stool and stomach cramps,Gastroenterology
+Loss of appetite and nausea,Gastroenterology
+Shortness of breath during exercise,Pulmonology
+Persistent cough for 2 weeks,Pulmonology
+Asthma attack with wheezing,Pulmonology
+Difficulty breathing at night,Pulmonology
+Chest congestion and mucus,Pulmonology
+Frequent urination and thirst,Endocrinology
+Weight gain and thyroid imbalance,Endocrinology
+Diabetes with high blood sugar,Endocrinology
+Hormonal imbalance and fatigue,Endocrinology
+Swelling in neck due to thyroid,Endocrinology
+Ear pain and hearing loss,ENT
+Sore throat and difficulty swallowing,ENT
+Blocked nose and sinus pain,ENT
+Frequent ear infections,ENT
+Tonsil infection with pain,ENT
+Eye pain and redness,Ophthalmology
+Blurry vision and watery eyes,Ophthalmology
+Cataract symptoms in elderly,Ophthalmology
+Itchy eyes due to allergy,Ophthalmology
+Sudden loss of vision,Ophthalmology
+Severe tooth pain,Dentistry
+Bleeding gums and bad breath,Dentistry
+Cavity in tooth,Dentistry
+Wisdom tooth pain,Dentistry
+Yellow teeth and stains,Dentistry
+Severe headache with vomiting,Neurology
+Chest heaviness after eating,Gastroenterology
+Dry cough and fever,Pulmonology
+Sharp pain in knee while running,Orthopedics
+Skin peeling with itching,Dermatology
+Cold hands and dizziness,Cardiology
+Severe tiredness and confusion,Endocrinology
+Stomach bloating after eating,Gastroenterology
+Severe sinus infection,ENT
+Irritation in eyes,Ophthalmology
+Tooth sensitivity while eating sweets,Dentistry
+Chronic back pain,Orthopedics
+Mild fever and weakness,General Physician
+Swollen glands in neck,ENT
+Wheezing and cough,Pulmonology
+Chest fluttering feeling,Cardiology
+Migraines with sensitivity to light,Neurology
+Hip pain while walking,Orthopedics
+Burning sensation in stomach,Gastroenterology
+Dry scaly skin,Dermatology
+Diabetes-related tiredness,Endocrinology
+Asthma symptoms worsening,Pulmonology
+Blurred vision with headache,Ophthalmology
+Gum swelling,Dentistry
+Neck stiffness and pain,Orthopedics
+Breathlessness after climbing stairs,Cardiology
+Chronic indigestion,Gastroenterology
+Frequent sneezing and cold,ENT
+Eye swelling with discharge,Ophthalmology
+Cough with mucus,Pulmonology
+Thyroid-related fatigue,Endocrinology
+Red patches on skin,Dermatology
+Chest pain during sleep,Cardiology
+Dizziness with fainting,Neurology
+Arthritis pain in joints,Orthopedics
+Ear ringing sound,ENT
+Toothache after eating,Dentistry
+Skin allergies after eating food,Dermatology
+Sudden vision blur,Ophthalmology
+Back pain with leg numbness,Orthopedics
+Persistent acidity,Gastroenterology
+Tiredness and low energy,General Physician
+Frequent headaches,General Physician
+Pain in chest after exercise,Cardiology
+Swelling in ankles,Cardiology
+Difficulty breathing with wheezing,Pulmonology
+Eye irritation due to screen use,Ophthalmology
+Sore throat infection,ENT
+Tooth decay and cavity,Dentistry
+Hormonal weight fluctuations,Endocrinology
+Acne breakouts,Dermatology
+Nausea after eating,Gastroenterology
+Migraine headaches,Neurology
+Muscle cramps in leg,Orthopedics
+Cold and cough for 1 week,General Physician
