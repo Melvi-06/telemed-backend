@@ -51,17 +51,17 @@ io.on("connection", (socket) => {
     console.log(`Doctor ${doctorId} logged in at ${doctorSessions[doctorId]}`);
   });
 
-  socket.on("registerPatient", ({ phone }) => socket.join(phone));
+  // socket.on("registerPatient", ({ phone }) => socket.join(phone));
 
-  socket.on("startCall", ({ doctorId, patientPhone, room }) => {
-    io.to(patientPhone).emit("incomingCall", { doctorId, room });
-  });
+  // socket.on("startCall", ({ doctorId, patientPhone, room }) => {
+  //   io.to(patientPhone).emit("incomingCall", { doctorId, room });
+  // });
 
-  socket.on("acceptCall", ({ room, patientPhone, doctorId }) => {
-    io.to(doctorId).emit("callAccepted", { room, patientPhone });
-  });
+  // socket.on("acceptCall", ({ room, patientPhone, doctorId }) => {
+  //   io.to(doctorId).emit("callAccepted", { room, patientPhone });
+  // });
 
-  socket.on("joinRoom", ({ room }) => socket.join(room));
+  // socket.on("joinRoom", ({ room }) => socket.join(room));
 
   socket.on("disconnect", () => console.log("Client disconnected:", socket.id));
 });
@@ -119,11 +119,12 @@ app.post("/api/patient-data", async (req, res) => {
   if (!phone) return res.status(400).json({ success: false, error: "Phone required" });
 
   try {
-    const newPatient = await Patient.create({ phone, symptoms, vitals, seen: false });
+    const newPatient = await Patient.create({ phone, symptoms, vitals, seen: false,timestamp: new Date(),});
 
     Object.entries(doctorSessions).forEach(([doctorId, loginTime]) => {
       if (newPatient.timestamp >= loginTime) {
         io.to(doctorId).emit("newPatientData", newPatient);
+        console.log(`Sent patient ${newPatient._id} to doctor ${doctorId}`);
       }
     });
 
