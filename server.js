@@ -1,4 +1,3 @@
-
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
@@ -24,7 +23,9 @@ mongoose
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
+// ------------------
 // Patient schema
+// ------------------
 const patientSchema = new mongoose.Schema({
   phone: String,
   symptoms: String,
@@ -37,9 +38,26 @@ const patientSchema = new mongoose.Schema({
 
   vitals: Object,
 
-  prescriptions: {
-    type: [String],
-    default: [],
+  // Prescription stored after doctor sends it
+  prescription: {
+    doctor: {
+      name: String,
+      qualification: String,
+      hospital: String,
+    },
+    medicines: [
+      {
+        name: String,
+        frequency: String,
+        duration: String,
+        qty: Number,
+        notes: String,
+      },
+    ],
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
   },
 
   seen: {
@@ -87,35 +105,6 @@ io.on("connection", (socket) => {
   socket.on("registerPatient", ({ phone }) => {
     socket.join(phone);
     console.log(`Patient ${phone} joined room ${phone}`);
-  });
-
-  // Doctor sends prescription
-  socket.on("sendPrescription", async ({ patientPhone, prescription }) => {
-    try {
-      await Patient.findOneAndUpdate(
-        { phone: patientPhone },
-        {
-          $push: {
-            prescriptions: {
-              $each: prescription,
-            },
-          },
-        },
-        {
-          new: true,
-          upsert: true,
-        }
-      );
-
-      io.to(patientPhone).emit("receivePrescription", prescription);
-
-      console.log(
-        `Prescription sent to patient ${patientPhone}:`,
-        prescription
-      );
-    } catch (err) {
-      console.error("Error sending prescription:", err);
-    }
   });
 
   socket.on("disconnect", () => {
@@ -269,8 +258,6 @@ app.get("/api/live-patients", async (req, res) => {
       timestamp: { $gte: loginTime },
     }).sort({ timestamp: 1 });
 
-    console.log("Patients sent to dashboard:", records);
-
     res.json({
       success: true,
       records,
@@ -286,16 +273,97 @@ app.get("/api/live-patients", async (req, res) => {
 });
 
 // ------------------
+// Save prescription sent by doctor
+// ------------------
+app.post("/api/prescription/:patientId", async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const { doctor, medicines } = req.body;
+
+    const updatedPatient = await Patient.findByIdAndUpdate(
+      patientId,
+      {
+        prescription: {
+          doctor,
+          medicines,
+          createdAt: new Date(),
+        },
+      },
+      {
+        new: true,
+      }
+    );
+
+    if (!updatedPatient) {
+      return res.status(404).json({
+        success: false,
+        error: "Patient not found",
+      });
+    }
+
+    // Also send instantly if patient is online
+    io.to(updatedPatient.phone).emit(
+      "receivePrescription",
+      updatedPatient.prescription
+    );
+
+    res.json({
+      success: true,
+      prescription: updatedPatient.prescription,
+    });
+  } catch (err) {
+    console.error("Error saving prescription:", err);
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to save prescription",
+    });
+  }
+});
+
+// ------------------
+// Patient side fetches prescription
+// ------------------
+app.get("/api/prescription/:patientId", async (req, res) => {
+  try {
+    const patient = await Patient.findById(req.params.patientId);
+
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        error: "Patient not found",
+      });
+    }
+
+    if (!patient.prescription) {
+      return res.json({
+        success: false,
+        message: "Prescription not yet available",
+      });
+    }
+
+    res.json({
+      success: true,
+      prescription: patient.prescription,
+    });
+  } catch (err) {
+    console.error("Error fetching prescription:", err);
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch prescription",
+    });
+  }
+});
+
+// ------------------
 // Mark patient as seen
 // ------------------
 app.post("/api/mark-seen", async (req, res) => {
   const { phone } = req.body;
 
   try {
-    await Patient.findOneAndUpdate(
-      { phone },
-      { seen: true }
-    );
+    await Patient.findOneAndUpdate({ phone }, { seen: true });
 
     res.json({
       success: true,
