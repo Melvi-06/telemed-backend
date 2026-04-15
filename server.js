@@ -16,10 +16,7 @@ app.use(express.json());
 // MongoDB setup
 // ------------------
 mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
@@ -27,37 +24,47 @@ mongoose
 // Patient schema
 // ------------------
 const patientSchema = new mongoose.Schema({
-  phone: String,
+  phone: {
+    type: String,
+    required: true,
+  },
+
   symptoms: String,
 
-  // Doctor suggested from SymptomsPage
   recommendedDoctor: {
     type: String,
     default: "",
   },
 
-  vitals: Object,
+  vitals: {
+    type: Object,
+    default: {},
+  },
 
-  // Prescription stored after doctor sends it
   prescription: {
-    doctor: {
-      name: String,
-      qualification: String,
-      hospital: String,
-    },
-    medicines: [
-      {
+    type: {
+      doctor: {
         name: String,
-        frequency: String,
-        duration: String,
-        qty: Number,
-        notes: String,
+        qualification: String,
+        hospital: String,
       },
-    ],
-    createdAt: {
-      type: Date,
-      default: Date.now,
+
+      medicines: [
+        {
+          name: String,
+          frequency: String,
+          duration: String,
+          qty: Number,
+          notes: String,
+        },
+      ],
+
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
     },
+    default: null,
   },
 
   seen: {
@@ -81,39 +88,37 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: "*",
+    methods: ["GET", "POST"],
   },
 });
 
-// Stores which doctors are online
 const doctorSessions = {};
 
 // ------------------
-// Socket.IO events
+// Socket.IO
 // ------------------
 io.on("connection", (socket) => {
-  console.log("Client connected:", socket.id);
+  console.log("Socket connected:", socket.id);
 
   socket.on("registerDoctor", ({ doctorId }) => {
     socket.join(doctorId);
     doctorSessions[doctorId] = new Date();
 
-    console.log(
-      `Doctor ${doctorId} logged in at ${doctorSessions[doctorId]}`
-    );
+    console.log(`Doctor ${doctorId} joined room ${doctorId}`);
   });
 
   socket.on("registerPatient", ({ phone }) => {
     socket.join(phone);
-    console.log(`Patient ${phone} joined room ${phone}`);
+    console.log(`Patient joined room ${phone}`);
   });
 
   socket.on("disconnect", () => {
-    console.log("Client disconnected:", socket.id);
+    console.log("Socket disconnected:", socket.id);
   });
 });
 
 // ------------------
-// Twilio OTP logic
+// OTP
 // ------------------
 const twilioClient = twilio(
   process.env.TWILIO_ACCOUNT_SID,
@@ -143,8 +148,6 @@ app.post("/api/send-otp", async (req, res) => {
 
     otps[phone] = otp;
 
-    console.log(`OTP for ${phone}: ${otp}`);
-
     res.json({
       success: true,
       message: "OTP sent successfully",
@@ -162,25 +165,17 @@ app.post("/api/send-otp", async (req, res) => {
 app.post("/api/verify-otp", (req, res) => {
   const { phone, otp } = req.body;
 
-  if (!phone || !otp) {
-    return res.status(400).json({
-      success: false,
-      error: "Phone and OTP required",
-    });
-  }
-
   if (otps[phone] && otps[phone] === otp) {
     delete otps[phone];
 
     return res.json({
       success: true,
-      message: "Phone verified",
     });
   }
 
   return res.status(400).json({
     success: false,
-    error: "Invalid or expired OTP",
+    error: "Invalid OTP",
   });
 });
 
@@ -188,18 +183,9 @@ app.post("/api/verify-otp", (req, res) => {
 // Save patient data
 // ------------------
 app.post("/api/patient-data", async (req, res) => {
-  const { phone, symptoms, recommendedDoctor, vitals } = req.body;
-
-  console.log("Received patient data:", req.body);
-
-  if (!phone) {
-    return res.status(400).json({
-      success: false,
-      error: "Phone required",
-    });
-  }
-
   try {
+    const { phone, symptoms, recommendedDoctor, vitals } = req.body;
+
     const newPatient = await Patient.create({
       phone,
       symptoms,
@@ -209,71 +195,63 @@ app.post("/api/patient-data", async (req, res) => {
       timestamp: new Date(),
     });
 
-    console.log("Saved patient:", newPatient);
-
-    // Send patient data to all logged-in doctors
     Object.entries(doctorSessions).forEach(([doctorId, loginTime]) => {
       if (newPatient.timestamp >= loginTime) {
         io.to(doctorId).emit("newPatientData", newPatient);
-
-        console.log(
-          `Sent patient ${newPatient._id} with recommended doctor "${newPatient.recommendedDoctor}" to doctor ${doctorId}`
-        );
       }
     });
 
     res.json({
       success: true,
       patientId: newPatient._id,
-      message: "Patient data saved and sent to doctors",
     });
   } catch (err) {
     console.error("Error saving patient:", err);
 
     res.status(500).json({
       success: false,
-      error: "Failed to save patient data",
+      error: "Failed to save patient",
     });
   }
 });
 
 // ------------------
-// Fetch live patients for doctor dashboard
+// Live doctor dashboard data
 // ------------------
 app.get("/api/live-patients", async (req, res) => {
-  const { doctorId } = req.query;
-
-  if (!doctorId || !doctorSessions[doctorId]) {
-    return res.json({
-      success: true,
-      records: [],
-    });
-  }
-
   try {
+    const { doctorId } = req.query;
+
+    if (!doctorId || !doctorSessions[doctorId]) {
+      return res.json({
+        success: true,
+        records: [],
+      });
+    }
+
     const loginTime = doctorSessions[doctorId];
 
     const records = await Patient.find({
       seen: false,
       timestamp: { $gte: loginTime },
-    }).sort({ timestamp: 1 });
+    }).sort({ timestamp: -1 });
 
     res.json({
       success: true,
       records,
     });
   } catch (err) {
-    console.error("Error fetching live patients:", err);
+    console.error("Error fetching patients:", err);
 
     res.status(500).json({
       success: false,
-      error: "Failed to fetch live patients",
+      error: "Failed to fetch patients",
     });
   }
 });
 
 // ------------------
-// Save prescription sent by doctor
+// Save prescription from doctor
 // ------------------
 app.post("/api/prescription/:patientId", async (req, res) => {
   try {
@@ -289,9 +267,7 @@ app.post("/api/prescription/:patientId", async (req, res) => {
           createdAt: new Date(),
         },
       },
-      {
-        new: true,
-      }
+      { new: true }
     );
 
     if (!updatedPatient) {
@@ -301,10 +277,14 @@ app.post("/api/prescription/:patientId", async (req, res) => {
       });
     }
 
-    // Also send instantly if patient is online
+    // Send immediately to patient if connected
     io.to(updatedPatient.phone).emit(
       "receivePrescription",
       updatedPatient.prescription
+    );
+
+    console.log(
+      `Prescription emitted to patient room ${updatedPatient.phone}`
     );
 
     res.json({
@@ -322,7 +302,7 @@ app.post("/api/prescription/:patientId", async (req, res) => {
 });
 
 // ------------------
-// Patient side fetches prescription
+// Fetch prescription for polling
 // ------------------
 app.get("/api/prescription/:patientId", async (req, res) => {
   try {
@@ -338,11 +318,11 @@ app.get("/api/prescription/:patientId", async (req, res) => {
     if (!patient.prescription) {
       return res.json({
         success: false,
-        message: "Prescription not yet available",
+        message: "Prescription not available yet",
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       prescription: patient.prescription,
     });
@@ -357,23 +337,22 @@ app.get("/api/prescription/:patientId", async (req, res) => {
 });
 
 // ------------------
-// Mark patient as seen
+// Mark seen
 // ------------------
 app.post("/api/mark-seen", async (req, res) => {
-  const { phone } = req.body;
-
   try {
-    await Patient.findOneAndUpdate({ phone }, { seen: true });
+    const { phone } = req.body;
 
-    res.json({
-      success: true,
-    });
+    await Patient.findOneAndUpdate(
+      { phone },
+      { seen: true }
+    );
+
+    res.json({ success: true });
   } catch (err) {
-    console.error("Error marking patient seen:", err);
+    console.error("Error marking patient as seen:", err);
 
-    res.status(500).json({
-      success: false,
-    });
+    res.status(500).json({ success: false });
   }
 });
 
@@ -385,3 +364,4 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
