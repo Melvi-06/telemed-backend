@@ -29,16 +29,63 @@ const patientSchema = new mongoose.Schema({
     required: true,
   },
 
-  symptoms: String,
+  age: {
+    type: Number,
+    default: null,
+  },
 
-  recommendedDoctor: {
+  gender: {
     type: String,
     default: "",
   },
 
+  symptoms: {
+    type: String,
+    default: "",
+  },
+
+  recommendation: {
+    disease: {
+      type: String,
+      default: "",
+    },
+
+    doctor: {
+      type: String,
+      default: "",
+    },
+
+    priority: {
+      type: String,
+      default: "Normal",
+    },
+
+    advice: {
+      type: String,
+      default: "",
+    },
+  },
+
   vitals: {
-    type: Object,
-    default: {},
+    heartRate: {
+      type: Number,
+      default: null,
+    },
+
+    spo2: {
+      type: Number,
+      default: null,
+    },
+
+    temperature: {
+      type: Number,
+      default: null,
+    },
+
+    alerts: {
+      type: [String],
+      default: [],
+    },
   },
 
   prescription: {
@@ -184,12 +231,21 @@ app.post("/api/verify-otp", (req, res) => {
 // ------------------
 app.post("/api/patient-data", async (req, res) => {
   try {
-    const { phone, symptoms, recommendedDoctor, vitals } = req.body;
+    const {
+      phone,
+      age,
+      gender,
+      symptoms,
+      recommendation,
+      vitals,
+    } = req.body;
 
     const newPatient = await Patient.create({
       phone,
+      age,
+      gender,
       symptoms,
-      recommendedDoctor,
+      recommendation,
       vitals,
       seen: false,
       timestamp: new Date(),
@@ -266,6 +322,7 @@ app.post("/api/prescription/:patientId", async (req, res) => {
           medicines,
           createdAt: new Date(),
         },
+        seen: true,
       },
       { new: true }
     );
@@ -277,7 +334,6 @@ app.post("/api/prescription/:patientId", async (req, res) => {
       });
     }
 
-    // Send immediately to patient if connected
     io.to(updatedPatient.phone).emit(
       "receivePrescription",
       updatedPatient.prescription
@@ -337,16 +393,15 @@ app.get("/api/prescription/:patientId", async (req, res) => {
 });
 
 // ------------------
-// Mark seen
+// Mark patient as seen
 // ------------------
 app.post("/api/mark-seen", async (req, res) => {
   try {
-    const { phone } = req.body;
+    const { patientId } = req.body;
 
-    await Patient.findOneAndUpdate(
-      { phone },
-      { seen: true }
-    );
+    await Patient.findByIdAndUpdate(patientId, {
+      seen: true,
+    });
 
     res.json({ success: true });
   } catch (err) {
@@ -364,4 +419,3 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
